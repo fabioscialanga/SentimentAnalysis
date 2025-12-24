@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  sentiment-api:
+    build: ./api
+    ports:
+      - "5000:5000"
+    environment:
+      - API_TOKEN=${API_TOKEN:-}
+      - MODEL_URL=${MODEL_URL:-}
+      - MODEL_PATH=/app/sentimentanalysismodel.pkl
+    networks:
+      - monitoring
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoring
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards
+
+networks:
+  monitoring:
+    driver: bridge

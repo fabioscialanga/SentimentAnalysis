@@ -1,0 +1,276 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sentiment
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-admin
+  namespace: sentiment
+type: Opaque
+stringData:
+  GF_SECURITY_ADMIN_PASSWORD: changeme
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: sentiment
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+    scrape_configs:
+      - job_name: 'sentiment_api'
+        static_configs:
+          - targets: ['sentiment-api:5000']
+    rule_files:
+      - /etc/prometheus/alerts.yml
+  alerts.yml: |
+    groups:
+      - name: sentiment-api-alerts
+        rules:
+          - alert: HighErrorRate
+            expr: increase(prediction_errors_total[5m]) > 5
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "Troppe eccezioni di predizione"
+              description: "Sono state registrate più di 5 eccezioni negli ultimi 5 minuti."
+          - alert: HighLatencyP95
+            expr: histogram_quantile(0.95, sum(rate(request_latency_seconds_bucket[5m])) by (le)) > 1
+            for: 5m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Latenza p95 sopra 1s"
+              description: "La latenza p95 delle richieste supera 1s negli ultimi 5 minuti."
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sentiment-api
+  namespace: sentiment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sentiment-api
+  template:
+    metadata:
+      labels:
+        app: sentiment-api
+    spec:
+      containers:
+        - name: api
+          image: sentiment-analysis-api:latest
+          ports:
+            - containerPort: 5000
+          env:
+            - name: API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-admin
+                  key: GF_SECURITY_ADMIN_PASSWORD
+            - name: MODEL_URL
+              value: "https://github.com/Profession-AI/progetti-devops/raw/refs/heads/main/Deploy%20e%20monitoraggio%20di%20un%20modello%20di%20sentiment%20analysis%20per%20recensioni/sentimentanalysismodel.pkl"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentiment-api
+  namespace: sentiment
+spec:
+  selector:
+    app: sentiment-api
+  ports:
+    - port: 5000
+      targetPort: 5000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: sentiment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:latest
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: sentiment
+spec:
+  selector:
+    app: prometheus
+  ports:
+    - port: 9090
+      targetPort: 9090
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: sentiment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:latest
+          env:
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-admin
+                  key: GF_SECURITY_ADMIN_PASSWORD
+            - name: GF_PATHS_PROVISIONING
+              value: /etc/grafana/provisioning
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - name: grafana-provisioning
+              mountPath: /etc/grafana/provisioning
+            - name: grafana-dashboards
+              mountPath: /etc/grafana/dashboards
+      volumes:
+        - name: grafana-provisioning
+          configMap:
+            name: grafana-provisioning
+            items:
+              - key: datasource.yml
+                path: provisioning/datasources/datasource.yml
+              - key: dashboard.yml
+                path: provisioning/dashboards/dashboard.yml
+        - name: grafana-dashboards
+          configMap:
+            name: grafana-dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-provisioning
+  namespace: sentiment
+data:
+  datasource.yml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus:9090
+        isDefault: true
+  dashboard.yml: |
+    apiVersion: 1
+    providers:
+      - name: "sentiment-dashboards"
+        orgId: 1
+        folder: ""
+        type: file
+        disableDeletion: false
+        allowUiUpdates: true
+        updateIntervalSeconds: 30
+        options:
+          path: /etc/grafana/dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: sentiment
+data:
+  sentiment-overview.json: |
+    {
+      "title": "Sentiment API - Overview",
+      "schemaVersion": 38,
+      "version": 1,
+      "refresh": "10s",
+      "panels": [
+        {
+          "type": "stat",
+          "title": "Richieste totali",
+          "targets": [
+            {
+              "expr": "sum(increase(request_count[5m]))",
+              "legendFormat": "requests"
+            }
+          ],
+          "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 }
+        },
+        {
+          "type": "stat",
+          "title": "Errori predizione",
+          "targets": [
+            {
+              "expr": "sum(increase(prediction_errors_total[5m]))",
+              "legendFormat": "errors"
+            }
+          ],
+          "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 }
+        },
+        {
+          "type": "gauge",
+          "title": "Latenza media (s)",
+          "targets": [
+            {
+              "expr": "rate(request_latency_seconds_sum[5m]) / rate(request_latency_seconds_count[5m])"
+            }
+          ],
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 }
+        },
+        {
+          "type": "graph",
+          "title": "Throughput per endpoint",
+          "targets": [
+            {
+              "expr": "sum by (endpoint) (rate(request_count[5m]))",
+              "legendFormat": "{{endpoint}}"
+            }
+          ],
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 13 }
+        }
+      ],
+      "templating": { "list": [] }
+    }
+

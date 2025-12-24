@@ -1,0 +1,20 @@
+groups:
+  - name: sentiment-api-alerts
+    rules:
+      - alert: HighErrorRate
+        expr: increase(prediction_errors_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Troppe eccezioni di predizione"
+          description: "Sono state registrate più di 5 eccezioni negli ultimi 5 minuti."
+      - alert: HighLatencyP95
+        expr: histogram_quantile(0.95, sum(rate(request_latency_seconds_bucket[5m])) by (le)) > 1
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Latenza p95 sopra 1s"
+          description: "La latenza p95 delle richieste supera 1s negli ultimi 5 minuti."
+

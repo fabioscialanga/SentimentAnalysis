@@ -1,0 +1,79 @@
+{
+  "id": null,
+  "title": "Sentiment API - Overview",
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "10s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Richieste totali",
+      "targets": [
+        {
+          "expr": "sum(increase(request_count[5m]))",
+          "legendFormat": "requests"
+        }
+      ],
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "Errori predizione",
+      "targets": [
+        {
+          "expr": "sum(increase(prediction_errors_total[5m]))",
+          "legendFormat": "errors"
+        }
+      ],
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 }
+    },
+    {
+      "type": "stat",
+      "title": "Auth fallite",
+      "targets": [
+        {
+          "expr": "sum(increase(auth_failures_total[5m]))",
+          "legendFormat": "auth_failures"
+        }
+      ],
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 }
+    },
+    {
+      "type": "gauge",
+      "title": "Latenza media (s)",
+      "targets": [
+        {
+          "expr": "rate(request_latency_seconds_sum[5m]) / rate(request_latency_seconds_count[5m])"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 5 }
+    },
+    {
+      "type": "graph",
+      "title": "Latenza per endpoint",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(request_latency_seconds_bucket[5m])) by (le, endpoint))",
+          "legendFormat": "{{endpoint}} p95"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 5 }
+    },
+    {
+      "type": "graph",
+      "title": "Throughput per endpoint",
+      "targets": [
+        {
+          "expr": "sum by (endpoint) (rate(request_count[5m]))",
+          "legendFormat": "{{endpoint}}"
+        }
+      ],
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 13 }
+    }
+  ],
+  "templating": {
+    "list": []
+  }
+}
+

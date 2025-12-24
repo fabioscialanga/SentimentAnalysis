@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentiment Pulse</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background-color: var(--surface);
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 500px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #a5b4fc, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        textarea {
+            width: 100%;
+            background-color: rgba(0, 0, 0, 0.2);
+            border: 2px solid #334155;
+            border-radius: 0.75rem;
+            color: var(--text);
+            padding: 1rem;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 120px;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+            margin-bottom: 1.5rem;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.875rem 2rem;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        #result {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            background-color: rgba(0, 0, 0, 0.2);
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .result-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .positive { color: var(--success); }
+        .negative { color: var(--error); }
+
+        .confidence-bar {
+            height: 6px;
+            background-color: #334155;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 1rem;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background-color: var(--primary);
+            width: 0%;
+            transition: width 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Sentiment Pulse</h1>
+        <p class="subtitle">Analyze customer reviews instantly</p>
+        
+        <textarea id="reviewInput" placeholder="Type a review here (e.g., 'The product is intuitive and fast')..."></textarea>
+        <button onclick="analyzeSentiment()" id="analyzeBtn">Analyze Sentiment</button>
+
+        <div id="result">
+            <div class="result-label">Predicted Sentiment</div>
+            <div id="sentimentValue" class="result-value"></div>
+            <div class="result-label">Confidence Score</div>
+            <div id="confidenceValue" style="color: var(--text)"></div>
+            <div class="confidence-bar">
+                <div id="confidenceFill" class="confidence-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function analyzeSentiment() {
+            const input = document.getElementById('reviewInput');
+            const btn = document.getElementById('analyzeBtn');
+            const resultDiv = document.getElementById('result');
+            const sentimentVal = document.getElementById('sentimentValue');
+            const confidenceVal = document.getElementById('confidenceValue');
+            const confidenceFill = document.getElementById('confidenceFill');
+
+            const text = input.value.trim();
+            if (!text) return;
+
+            // UI Loading State
+            btn.textContent = 'Analyzing...';
+            btn.disabled = true;
+            resultDiv.style.display = 'none';
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ review: text })
+                });
+
+                const data = await response.json();
+
+                // Show Result
+                resultDiv.style.display = 'block';
+                sentimentVal.textContent = data.sentiment.toUpperCase();
+                
+                // Color coding
+                sentimentVal.className = 'result-value ' + (data.sentiment === 'positive' ? 'positive' : 'negative');
+                
+                // Confidence
+                const percentage = Math.round(data.confidence * 100);
+                confidenceVal.textContent = percentage + '%';
+                confidenceFill.style.width = percentage + '%';
+
+            } catch (error) {
+                alert('Error analyzing sentiment. Is the API running?');
+                console.error(error);
+            } finally {
+                btn.textContent = 'Analyze Sentiment';
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
