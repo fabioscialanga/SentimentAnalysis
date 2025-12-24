@@ -17,6 +17,7 @@
 - [Troubleshooting](#troubleshooting)
 - [Repository GitHub](#repository-github)
 - [Contribuire](#contribuire)
+- [Licenza](#licenza)
 
 ---
 
@@ -44,23 +45,7 @@ Questo progetto implementa un sistema automatizzato per il deploy e il monitorag
 
 ## 🏗️ Panoramica del Sistema
 
-Il sistema è composto da:
-
-- **API REST Flask**: Servizio web che espone il modello di sentiment analysis
-- **Prometheus**: Sistema di monitoraggio e raccolta metriche
-- **Grafana**: Dashboard interattive per visualizzazione metriche
-- **Jenkins**: Pipeline CI/CD per automazione deploy
-- **Docker & Kubernetes**: Containerizzazione e orchestrazione
-
-### Flusso di Funzionamento
-
-```
-Recensione → API Flask → Modello ML → Risposta JSON
-                ↓
-         Metriche Prometheus
-                ↓
-         Dashboard Grafana
-```
+Il sistema è composto da API REST Flask, Prometheus per il monitoraggio, Grafana per le dashboard, Jenkins per CI/CD e Docker/Kubernetes per il deploy.
 
 ---
 
@@ -87,13 +72,7 @@ Recensione → API Flask → Modello ML → Risposta JSON
 
 ### Architettura Kubernetes
 
-Il sistema può essere deployato su Kubernetes utilizzando i manifest nella directory `k8s/`, che includono:
-
-- **Namespace**: Isolamento logico delle risorse
-- **Deployment**: Gestione dei pod per API, Prometheus e Grafana
-- **Service**: Esposizione dei servizi
-- **ConfigMap**: Configurazioni Prometheus e Grafana
-- **Secret**: Gestione sicura di password e token
+Il sistema può essere deployato su Kubernetes utilizzando i manifest nella directory `k8s/`, che includono namespace, deployment, service, ConfigMap e Secret.
 
 ---
 
@@ -193,9 +172,9 @@ MODEL_URL=https://github.com/Profession-AI/progetti-devops/raw/refs/heads/main/D
 
 ### 3. Avviare i Servizi con Docker Compose
 
-```bash
-docker-compose up -d --build
-```
+    ```bash
+    docker-compose up -d --build
+    ```
 
 Questo comando:
 - Costruisce l'immagine Docker dell'API
@@ -332,33 +311,6 @@ print(f"Sentiment: {result['sentiment']}")
 print(f"Confidence: {result['confidence']:.2%}")
 ```
 
-#### JavaScript (Node.js)
-
-```javascript
-const axios = require('axios');
-
-const API_URL = 'http://localhost:5000';
-const API_TOKEN = 'il_tuo_token_segreto'; // Opzionale
-
-const headers = {
-  'Content-Type': 'application/json'
-};
-if (API_TOKEN) {
-  headers['Authorization'] = `Bearer ${API_TOKEN}`;
-}
-
-axios.post(`${API_URL}/predict`, 
-  { review: 'This product exceeded my expectations!' },
-  { headers }
-)
-.then(response => {
-  console.log(`Sentiment: ${response.data.sentiment}`);
-  console.log(`Confidence: ${response.data.confidence * 100}%`);
-})
-.catch(error => {
-  console.error('Error:', error.response?.data || error.message);
-});
-```
 
 ---
 
@@ -453,21 +405,9 @@ Il `Jenkinsfile` definisce una pipeline con i seguenti stage:
    - Deploy con Docker Compose (default)
    - Deploy su Kubernetes (se `APPLY_K8S=true`)
 
-### Trigger Automatici
-
-La pipeline si attiva automaticamente su:
-- **Push su branch `main`**
-- **Pull Request** (opzionale, configurabile)
-
 ### Parametri Pipeline
 
-Puoi configurare parametri opzionali:
-
 - `APPLY_K8S`: Se `true`, applica i manifest Kubernetes invece di Docker Compose
-
-### Notifiche
-
-La pipeline include notifiche di successo/fallimento nella sezione `post`.
 
 ---
 
@@ -523,10 +463,6 @@ kubectl port-forward -n sentiment-analysis svc/prometheus 9090:9090
 kubectl port-forward -n sentiment-analysis svc/grafana 3000:3000
 ```
 
-#### Ingress (Opzionale)
-
-Per esporre i servizi pubblicamente, configura un Ingress controller e aggiungi le regole appropriate.
-
 ### Aggiornare il Deploy
 
 Dopo modifiche al codice:
@@ -564,11 +500,9 @@ L'API supporta autenticazione opzionale tramite token Bearer:
 
 ### Best Practices
 
-1. **File `.env`**: Mai committare file `.env` nel repository
-2. **Secret Kubernetes**: Utilizza Secret invece di ConfigMap per dati sensibili
-3. **HTTPS**: In produzione, configura HTTPS/TLS per tutti i servizi
-4. **Network Policies**: In Kubernetes, configura Network Policies per limitare il traffico
-5. **Resource Limits**: Imposta limiti di CPU/memoria per i container
+- Mai committare file `.env` nel repository
+- Utilizza Secret invece di ConfigMap per dati sensibili in Kubernetes
+- Configura HTTPS/TLS in produzione
 
 ---
 
@@ -638,10 +572,6 @@ L'API supporta autenticazione opzionale tramite token Bearer:
    git push -u origin main
    ```
 
-3. **Configura GitHub Actions** (opzionale):
-   - Crea `.github/workflows/ci.yml` per CI automatico
-   - Integra con Jenkins per CD
-
 ### Struttura del Repository
 
 Il repository include:
@@ -655,70 +585,19 @@ Il repository include:
 - ✅ Test automatizzati
 - ✅ Documentazione completa
 
-### Badge (Opzionale)
-
-Puoi aggiungere badge al README per mostrare lo stato del progetto:
-
-```markdown
-![Build Status](https://jenkins.example.com/buildStatus/icon?job=sentiment-analysis-pipeline)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-```
-
 ---
 
 ## 🤝 Contribuire
 
-### Come Contribuire
-
-1. **Fork** il repository
-2. Crea un **branch** per la tua feature (`git checkout -b feature/AmazingFeature`)
-3. **Commit** le modifiche (`git commit -m 'Add some AmazingFeature'`)
-4. **Push** al branch (`git push origin feature/AmazingFeature`)
-5. Apri una **Pull Request**
-
-### Standard di Codice
-
-- Segui le convenzioni PEP 8 per Python
-- Aggiungi test per nuove funzionalità
-- Aggiorna la documentazione se necessario
-- Assicurati che tutti i test passino prima di fare commit
-
-### Reporting Bug
-
-Se trovi un bug, apri una Issue su GitHub includendo:
-- Descrizione del problema
-- Passi per riprodurre
-- Log rilevanti
-- Ambiente (OS, versione Docker, ecc.)
+1. Fork il repository
+2. Crea un branch per la tua feature
+3. Commit le modifiche
+4. Push al branch
+5. Apri una Pull Request
 
 ---
 
 ## 📄 Licenza
 
-Questo progetto è rilasciato sotto licenza MIT. Vedi il file `LICENSE` per dettagli.
+Questo progetto è rilasciato sotto licenza MIT.
 
----
-
-## 👥 Autori
-
-- **Tu** - *Sviluppo iniziale* - [TuoGitHub](https://github.com/TUO-USERNAME)
-
----
-
-## 🙏 Ringraziamenti
-
-- Modello di sentiment analysis fornito da Profession-AI
-- Comunità open source per gli strumenti utilizzati (Flask, Prometheus, Grafana, Jenkins)
-
----
-
-## 📞 Supporto
-
-Per domande o supporto:
-- Apri una Issue su GitHub
-- Consulta la documentazione
-- Controlla la sezione Troubleshooting
-
----
-
-**Ultimo aggiornamento**: Gennaio 2025
