@@ -1,17 +1,24 @@
 pipeline {
     agent any
 
+    triggers {
+        pollSCM('H/5 * * * *')
+    }
+
     parameters {
-        booleanParam(name: 'APPLY_K8S', defaultValue: false, description: 'Applica i manifest Kubernetes dopo il deploy Docker Compose')
+        booleanParam(
+            name: 'APPLY_K8S',
+            defaultValue: false,
+            description: 'Deploy su Kubernetes invece di Docker Compose'
+        )
     }
 
     environment {
-        DOCKER_IMAGE = "sentiment-analysis-api"
-        REGISTRY_TAG = "latest"
         COMPOSE_CMD = "docker compose"
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -21,12 +28,8 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    echo 'Building Docker Image...'
-                    if (isUnix()) {
-                        sh "docker build -t ${DOCKER_IMAGE}:${REGISTRY_TAG} ./api"
-                    } else {
-                        bat "docker build -t ${DOCKER_IMAGE}:${REGISTRY_TAG} ./api"
-                    }
+                    echo "Build con Docker Compose"
+                    sh "${COMPOSE_CMD} build sentiment-api"
                 }
             }
         }
@@ -34,22 +37,14 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    echo 'Running Unit Tests...'
-                    if (isUnix()) {
-                        sh """
-                        python -m pip install --upgrade pip
-                        python -m pip install -r api/requirements.txt
-                        python -m pip install pytest
-                        pytest api/tests/
-                        """
-                    } else {
-                        bat """
-                        python -m pip install --upgrade pip
-                        python -m pip install -r api/requirements.txt
-                        python -m pip install pytest
-                        pytest api/tests/
-                        """
-                    }
+                    echo "Esecuzione test"
+                    sh """
+                    cd api
+                    python -m pip install --upgrade pip
+                    pip install -r requirements.txt
+                    pip install pytest
+                    pytest tests/ -v
+                    """
                 }
             }
         }
@@ -57,27 +52,14 @@ pipeline {
         stage('Deploy') {
             steps {
                 script {
-                    echo 'Deploying to Production...'
-                    if (isUnix()) {
-                        sh "${COMPOSE_CMD} up -d --build sentiment-api"
-                    } else {
-                        bat "${COMPOSE_CMD} up -d --build sentiment-api"
-                    }
-                }
-            }
-        }
-        
-        stage('Deploy K8s (optional)') {
-            when {
-                expression { return params.APPLY_K8S == true }
-            }
-            steps {
-                script {
-                    echo 'Applying Kubernetes manifests...'
-                    if (isUnix()) {
+                    if (params.APPLY_K8S) {
+                        echo "Deploy su Kubernetes"
                         sh "kubectl apply -f k8s/sentiment-stack.yaml"
                     } else {
-                        bat "kubectl apply -f k8s/sentiment-stack.yaml"
+                        echo "Deploy con Docker Compose"
+                        sh """
+                        ${COMPOSE_CMD} up -d sentiment-api
+                        """
                     }
                 }
             }
@@ -86,10 +68,10 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline completed successfully!'
+            echo 'Pipeline completata con successo'
         }
         failure {
-            echo 'Pipeline failed.'
+            echo 'Pipeline fallita'
         }
     }
 }

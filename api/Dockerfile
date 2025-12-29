@@ -10,11 +10,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Pre-scarica il modello per evitare dipendenze esterne in runtime
-RUN python -c "import os, urllib.request; url=os.environ.get('MODEL_URL'); dest=os.environ.get('MODEL_PATH');\nprint(f'Downloading model from {url}...'); urllib.request.urlretrieve(url, dest); print('Model ready at', dest)"
-
-# Expose port 5000
 EXPOSE 5000
 
-# Run the application
 CMD ["python", "app.py"]

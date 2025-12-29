@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   sentiment-api:
     build: ./api
@@ -8,7 +6,9 @@ services:
     environment:
       - API_TOKEN=${API_TOKEN:-}
       - MODEL_URL=${MODEL_URL:-}
-      - MODEL_PATH=/app/sentimentanalysismodel.pkl
+      - MODEL_PATH=/app/models/sentimentanalysismodel.pkl
+    volumes:
+      - ./models:/app/models:ro
     networks:
       - monitoring
 

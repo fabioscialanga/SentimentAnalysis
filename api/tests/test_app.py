@@ -21,10 +21,6 @@ def test_predict_no_data(client):
     assert rv.status_code == 400
 
 def test_predict_mock(client):
-    """
-    Test prediction. If model is present, it tests the model.
-    If not, it tests the mock logic in app.py.
-    """
     rv = client.post('/predict', json={'review': 'This is a great movie!'})
     assert rv.status_code == 200
     json_data = rv.get_json()

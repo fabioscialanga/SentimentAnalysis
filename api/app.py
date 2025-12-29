@@ -26,29 +26,26 @@ model = None
 
 
 def download_model_if_missing() -> None:
-    """Scarica il modello dal repository se non è già presente."""
     if os.path.exists(MODEL_PATH):
         return
     try:
-        print(f"Model not found locally, downloading from {MODEL_URL}...")
+        print(f"Downloading model from {MODEL_URL}...")
         urllib.request.urlretrieve(MODEL_URL, MODEL_PATH)
-        print("Model downloaded successfully.")
+        print("Model downloaded.")
     except Exception as e:
-        # Non blocchiamo l'avvio: la TextBlob fallback resta disponibile
         print(f"Failed to download model: {e}")
 
 
 def load_model() -> None:
-    """Carica il modello pickle se disponibile."""
     global model
     try:
         download_model_if_missing()
         if os.path.exists(MODEL_PATH):
             with open(MODEL_PATH, 'rb') as f:
                 model = pickle.load(f)
-            print("Model loaded successfully.")
+            print("Model loaded.")
         else:
-            print(f"Warning: Model file not found at {MODEL_PATH}. Using fallback logic.")
+            print(f"Model not found at {MODEL_PATH}, using fallback.")
     except Exception as e:
         print(f"Error loading model: {e}")
 
@@ -56,7 +53,6 @@ def load_model() -> None:
 load_model()
 
 def _is_authorized() -> bool:
-    """Controlla l'header Authorization se il token è configurato."""
     if not API_TOKEN:
         return True
     auth_header = request.headers.get('Authorization', '')
@@ -73,9 +69,7 @@ def before_request():
 @app.after_request
 def after_request(response):
     request_latency = time.time() - request.start_time
-    # Record latency
     REQUEST_LATENCY.labels(endpoint=request.path).observe(request_latency)
-    # Record request count
     REQUEST_COUNT.labels(method=request.method, endpoint=request.path, http_status=response.status_code).inc()
     return response
 
@@ -91,7 +85,6 @@ def predict():
         confidence = 0.0
         
         if model:
-            # Predict using the loaded model
             prediction_result = model.predict([review])
             prediction = prediction_result[0]
             
@@ -101,7 +94,6 @@ def predict():
             else:
                 confidence = 1.0
         else:
-            # Fallback to TextBlob if model is not available
             from textblob import TextBlob
             analysis = TextBlob(review)
             polarity = analysis.sentiment.polarity
@@ -113,7 +105,6 @@ def predict():
                 prediction = "negative"
                 confidence = 0.5 + (abs(polarity) / 2)
             else:
-                # Check for common Italian positive keywords
                 it_positive = {"fantastico", "ottimo", "bello", "piace", "adoro", "meraviglioso", "eccellente"}
                 if any(w in review.lower() for w in it_positive):
                     prediction = "positive"
