@@ -1,5 +1,5 @@
 # Deploy e Monitoraggio di un Modello di Sentiment Analysis per Recensioni
-Test automatic pipeline
+
 ## 📋 Indice
 
 - [Contesto Aziendale](#contesto-aziendale)
