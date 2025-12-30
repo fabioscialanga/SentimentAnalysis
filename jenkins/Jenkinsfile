@@ -19,12 +19,6 @@ pipeline {
 
     stages {
 
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-
         stage('Build') {
             steps {
                 script {
@@ -57,9 +51,7 @@ pipeline {
                         sh "kubectl apply -f k8s/sentiment-stack.yaml"
                     } else {
                         echo "Deploy con Docker Compose"
-                        sh """
-                        ${COMPOSE_CMD} up -d sentiment-api
-                        """
+                        sh "${COMPOSE_CMD} up -d sentiment-api"
                     }
                 }
             }
