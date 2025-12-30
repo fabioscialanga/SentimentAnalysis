@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    options {
+        skipDefaultCheckout(true)
+    }
+
     triggers {
         pollSCM('H/5 * * * *')
     }
@@ -21,25 +25,21 @@ pipeline {
 
         stage('Build') {
             steps {
-                script {
-                    echo "Build con Docker Compose"
-                    sh "${COMPOSE_CMD} build sentiment-api"
-                }
+                echo "Build con Docker Compose"
+                sh "${COMPOSE_CMD} build sentiment-api"
             }
         }
 
         stage('Test') {
             steps {
-                script {
-                    echo "Esecuzione test"
-                    sh """
-                    cd api
-                    python -m pip install --upgrade pip
-                    pip install -r requirements.txt
-                    pip install pytest
-                    pytest tests/ -v
-                    """
-                }
+                echo "Esecuzione test"
+                sh """
+                cd api
+                python -m pip install --upgrade pip
+                pip install -r requirements.txt
+                pip install pytest
+                pytest tests/ -v
+                """
             }
         }
 
