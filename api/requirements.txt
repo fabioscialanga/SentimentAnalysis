@@ -7,3 +7,4 @@ pickle5; python_version < "3.8"
 joblib
 gunicorn
 textblob
+pytest>=7.0
