@@ -2,31 +2,26 @@ pipeline {
     agent any
 
     options {
+        // Evita il checkout automatico (lo abbiamo già risolto)
         skipDefaultCheckout(true)
     }
 
     triggers {
+        // Polling SCM ogni 5 minuti
         pollSCM('H/5 * * * *')
-    }
-
-    parameters {
-        booleanParam(
-            name: 'APPLY_K8S',
-            defaultValue: false,
-            description: 'Deploy su Kubernetes invece di Docker Compose'
-        )
     }
 
     environment {
         COMPOSE_CMD = "docker compose"
+        ENV_FILE = ".env.ci"
     }
 
     stages {
 
         stage('Build') {
             steps {
-                echo "Build con Docker Compose"
-                sh "${COMPOSE_CMD} build sentiment-api"
+                echo "Build con Docker Compose (CI)"
+                sh "${COMPOSE_CMD} --env-file ${ENV_FILE} build sentiment-api"
             }
         }
 
@@ -45,15 +40,8 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                script {
-                    if (params.APPLY_K8S) {
-                        echo "Deploy su Kubernetes"
-                        sh "kubectl apply -f k8s/sentiment-stack.yaml"
-                    } else {
-                        echo "Deploy con Docker Compose"
-                        sh "${COMPOSE_CMD} up -d sentiment-api"
-                    }
-                }
+                echo "Deploy con Docker Compose (CI)"
+                sh "${COMPOSE_CMD} --env-file ${ENV_FILE} up -d sentiment-api"
             }
         }
     }
