@@ -1,8 +1,6 @@
 services:
   sentiment-api:
     build: ./api
-    ports:
-      - "5000:5000"
     environment:
       - API_TOKEN=${API_TOKEN:-}
       - MODEL_URL=${MODEL_URL:-}
