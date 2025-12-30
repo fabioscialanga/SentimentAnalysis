@@ -32,12 +32,16 @@ pipeline {
         }
         
 
-        stage('Deploy') {
+       stage('Deploy') {
             steps {
                 echo "Deploy con Docker Compose"
-                sh "docker compose --env-file .env.ci up -d sentiment-api"
+                sh '''
+                docker compose --env-file .env.ci down
+                docker compose --env-file .env.ci up -d sentiment-api
+                '''
             }
-        }
+        } 
+        
     }
 
     post {

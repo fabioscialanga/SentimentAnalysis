@@ -6,7 +6,7 @@ ENV MODEL_URL="https://github.com/Profession-AI/progetti-devops/raw/refs/heads/m
     MODEL_PATH="/app/sentimentanalysismodel.pkl"
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt pytest
 
 COPY . .
 
