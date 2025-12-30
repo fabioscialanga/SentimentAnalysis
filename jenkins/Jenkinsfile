@@ -18,8 +18,7 @@ pipeline {
 
         stage('Checkout') {
             steps {
-                echo "Checkout del repository"
-                checkout scm
+                echo 'SCM checkout already performed by Jenkins'
             }
         }
 
