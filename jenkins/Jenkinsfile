@@ -21,19 +21,16 @@ pipeline {
                 '''
             }
         }
-
+        
         stage('Test') {
             steps {
-                echo "Esecuzione test"
+                echo "Esecuzione test nel container sentiment-api"
                 sh '''
-                cd api
-                python -m pip install --upgrade pip
-                pip install -r requirements.txt
-                pip install pytest
-                pytest tests/ -v
+                docker compose --env-file .env.ci run --rm sentiment-api pytest tests/ -v
                 '''
             }
         }
+        
 
         stage('Deploy') {
             steps {
