@@ -21,12 +21,12 @@ pipeline {
                 '''
             }
         }
-        
+
         stage('Test') {
             steps {
                 echo "Esecuzione test nel container sentiment-api"
                 sh '''
-                docker compose --env-file .env.ci run --rm sentiment-api pytest tests/ -v
+                docker compose --env-file .env.ci run --rm sentiment-api python -m pytest tests/ -v
                 '''
             }
         }
