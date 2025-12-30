@@ -2,12 +2,10 @@ pipeline {
     agent any
 
     options {
-        // Evita il checkout automatico (lo abbiamo già risolto)
         skipDefaultCheckout(true)
     }
 
     triggers {
-        // Polling SCM ogni 5 minuti
         pollSCM('H/5 * * * *')
     }
 
@@ -17,6 +15,13 @@ pipeline {
     }
 
     stages {
+
+        stage('Checkout') {
+            steps {
+                echo "Checkout del repository"
+                checkout scm
+            }
+        }
 
         stage('Build') {
             steps {
